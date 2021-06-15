@@ -91,7 +91,7 @@ def sam(
                     "status_code": 200,
                     "body": json.dumps({
                         "success": True,
-                        **({"result": res} if isinstance(res, dict) else res)
+                        **({"result": res} if not isinstance(res, dict) else res)
                     })
                 }
             else:

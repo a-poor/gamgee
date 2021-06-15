@@ -17,6 +17,9 @@ from pydantic import BaseModel
 from . import errors
 
 
+__version__ = "0.0.1"
+
+
 AuthUser = NewType("AuthUser", BaseModel)
 
 class Method(Enum):
@@ -34,9 +37,10 @@ def sam(
 ):
     """
 
-    :param jsonize_response:
+    :param method: (Unused) 
     :param authenticate:
     :param authorize:
+    :param jsonize_response:
     """
     if authorize is not None:
         assert authenticate is not None, "If `authorize` is not `None`, `authenticate` can't be `None`."

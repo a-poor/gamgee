@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="gamgee",
-    version="0.0.1",
+    version="0.0.2",
     author="Austin Poor",
     author_email="45295232+a-poor@users.noreply.github.com",
     description="A small example package",

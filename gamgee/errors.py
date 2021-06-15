@@ -32,4 +32,8 @@ class AuthorizationError(HttpError):
     status_code = 403
     default_message = "Unauthorized."
 
+class InternalServerError(HttpError): 
+    status_code = 500
+    default_message = "Internal server error."
+
 

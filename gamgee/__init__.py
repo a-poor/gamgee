@@ -1,3 +1,12 @@
+"""
+
+## TODO:
+* Capture / convert arguments / types
+* If return type is None/NoReturn, don't return something
+
+
+"""
+
 import json
 from enum import Enum
 import functools as ft
@@ -10,7 +19,7 @@ from . import errors
 
 AuthUser = NewType("AuthUser", BaseModel)
 
-class Methods(Enum):
+class Method(Enum):
     GET = "GET"
     PUT = "PUT"
     POST = "POST"
@@ -18,6 +27,7 @@ class Methods(Enum):
 
 
 def sam(
+    method: Method = Method.GET,
     authenticate: Optional[Callable[[dict], AuthUser]] = None,
     authorize: Optional[Callable[[AuthUser], bool]] = None,
     jsonize_response: bool = True,
@@ -34,28 +44,39 @@ def sam(
     def wrapper(fn):
         @ft.wraps(fn)
         def inner(event, context):
-            # Authenticate the user
-            try:
-                user = authenticate(event)
-            except errors.HttpError as e: #TODO: Make less general
-                return e.json()
-            
-            # Authorize the user
-            try:
-                if not authorize(user):
-                    raise errors.AuthorizationError()
-            except errors.HttpError as e:
-                return e.json()
+            if authenticate is not None:
+                # Authenticate the user
+                try:
+                    user = authenticate(event)
+                except errors.HttpError as e: #TODO: Make less general
+                    return e.json()
+
+                if authorize is not None:
+                    # Authorize the user
+                    try:
+                        if not authorize(user):
+                            raise errors.AuthorizationError()
+                    except errors.HttpError as e:
+                        return e.json()
 
             # Get the correct args/kwargs
             # TODO: ...
-            kwargs = {}
+            kwargs = {"event": event}
 
             # Call the function
-            if authenticate is not None:
-                res = fn(**kwargs, auth_user=user)
-            else:
-                res = fn(**kwargs)
+            try:
+                if authenticate is not None:
+                    res = fn(**kwargs, auth_user=user)
+                else:
+                    res = fn(**kwargs)
+            except errors.HttpError as e:
+                return e.json()
+            except Exception as e:
+                print("UNCAUGHT ERROR:", e)
+                return errors.InternalServerError().json()
+
+
+            #TODO: If return type is None/NoReturn, don't include body? or just say success?
 
             # Return a response
             if jsonize_response:

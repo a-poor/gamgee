@@ -18,7 +18,7 @@ from . import auth
 from . import args
 from . import errors
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 
 AuthUser = NewType("AuthUser", BaseModel)

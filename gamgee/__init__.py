@@ -14,8 +14,9 @@ from typing import NewType, Optional, Callable
 
 from pydantic import BaseModel
 
+from . import auth
+from . import args
 from . import errors
-
 
 __version__ = "0.0.2"
 
@@ -35,15 +36,17 @@ def sam(
     authorize: Optional[Callable[[AuthUser], bool]] = None,
     jsonize_response: bool = True,
 ):
-    """
+    """Wraps an AWS lambda handler function.
 
-    :param method: (Unused) 
-    :param authenticate:
-    :param authorize:
-    :param jsonize_response:
+    :param method: (NOTE: Unused for now) The request's HTTP method 
+    :param authenticate: Function to authenticate the requesting user.
+    :param authorize: Function to authorize the requesting user.
+    :param jsonize_response: Should the response body be wrapped in JSON?
     """
+    # Check authorize/authenticate
     if authorize is not None:
-        assert authenticate is not None, "If `authorize` is not `None`, `authenticate` can't be `None`."
+        assert authenticate is not None, "If `authorize` is not `None`, "+\
+            "`authenticate` can't be `None`."
 
     def wrapper(fn):
         @ft.wraps(fn)

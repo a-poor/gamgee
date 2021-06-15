@@ -26,7 +26,7 @@ def get_bearer_token(event: dict) -> str:
 
 
 def make_authorizer(secret: Optional[str] = None, algorithm: Optional[str] = None) -> Callable[[dict], dict]:
-    """
+    """Create a JWT authorization function.
 
     :param secret: JWT secret for decoding incoming token.
         If not supplied, will check for the environment 
@@ -43,7 +43,15 @@ def make_authorizer(secret: Optional[str] = None, algorithm: Optional[str] = Non
     algorithm = algorithm if algorithm is not None \
         else os.environ.get("JWT_ALGORITHM", DEFAULT_JWT_ALGO)
 
-    def authorizer(event: dict) -> dict:
+    def jwt_authorizer(event: dict) -> dict:
+        """Authorize a JWT token from a lambda request event.
+
+        :param event: Lambda request event
+        :returns: Result of decoding the request's JWT token
+        :raises RequestParseError: If JWT token can't be retreived
+            from the request event (from `event.headers.Authorization`).
+        :raises AuthenticationError: If the JWT token can't be validated.
+        """
         token = get_bearer_token(event)
         if token.startswith("Bearer "):
             token = token[len("Bearer "):]
@@ -52,5 +60,5 @@ def make_authorizer(secret: Optional[str] = None, algorithm: Optional[str] = Non
         except Exception as e: #TODO: Make less general
             raise AuthenticationError()
         return res
-    return authorizer
+    return jwt_authorizer
 

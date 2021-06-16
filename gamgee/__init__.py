@@ -15,7 +15,7 @@ from . import errors
 from . import types
 from .types import AuthUser, Method, Path, Body, Query, Header, RequestParam
 
-__version__ = "0.0.4"
+__version__ = "0.1.0"
 
 
 def sam(

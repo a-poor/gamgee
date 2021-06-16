@@ -9,21 +9,20 @@
 
 import json
 import functools as ft
-from typing import Optional, Callable, Union
+import inspect as _inspect
+from typing import Optional, Callable, Union, NoReturn, Any
 
 from . import auth
 from . import args
 from . import errors
-from .types import AuthUser
+from . import types
+from .types import AuthUser, Method, Path, Body, Query, Header, RequestParam
 
 __version__ = "0.0.4"
 
 
 def sam(
-    query_params: bool = True,
-    path_params: bool = True,
-    unpack_body: bool = True,
-    packed_body: bool = False,
+    method: Union[str,Method] = Method.GET,
     authenticate: Optional[Callable[[dict], AuthUser]] = None,
     authorize: Optional[Callable[[AuthUser], bool]] = None,
     jsonize_response: bool = True,
@@ -51,7 +50,42 @@ def sam(
         assert authenticate is not None, "If `authorize` is not `None`, "+\
             "`authenticate` can't be `None`."
 
+    # Coerce `method` to be a Method enum
+    if not isinstance(method, Method):
+        method = method.fromStr(str(method).upper())
+
     def wrapper(fn):
+
+        fn_args = dict(_inspect.signature(fn).parameters)
+        return_type = args.get_return_type(fn)
+
+        if method is Method.GET:
+            assumed_param_type = Query
+        elif method is Method.POST:
+            assumed_param_type = Body
+        elif method is Method.PUT:
+            assumed_param_type = Body
+        elif method is Method.DELETE:
+            assumed_param_type = Query
+        else:
+            assumed_param_type = Body
+
+        # Get function arguments and matching annotations
+        # if a `RequestParam` type isn't set, use `assumed_param_type`
+        # based on the HTTP method
+        fn_args = {
+            k: (
+                (v.annotation if v.annotation is not _inspect._empty else Any)
+                if isinstance(v.annotation, RequestParam) else 
+                assumed_param_type(v.annotation))
+            for k, v in fn_args.items()
+        }
+        # Divide arguments out according to their source locations
+        query_args = {k: v for k, v in fn_args.items() if isinstance(v, Query)}
+        path_args = {k: v for k, v in fn_args.items() if isinstance(v, Path)}
+        body_args = {k: v for k, v in fn_args.items() if isinstance(v, Body)}
+        header_args = {k: v for k, v in fn_args.items() if isinstance(v, Header)}
+
         @ft.wraps(fn)
         def inner(event, context):
             if authenticate is not None:
@@ -70,8 +104,39 @@ def sam(
                         return e.json()
 
             # Get the correct args/kwargs
-            # TODO: ...
-            kwargs = {"event": event}
+            kwargs = {}
+
+            # Get the query/path/body/header params
+            try:
+                loc = "query params"
+                for k, v in query_args.items():
+                    key = v.key if v.key is not None else k
+                    kwargs[k] = event["queryStringParameters"][key]
+                
+                loc = "path params"
+                for k, v in path_args.items():
+                    key = v.key if v.key is not None else k
+                    kwargs[k] = event["pathParameters"][key]
+                
+                loc = "request body"
+                for k, v in body_args.items():
+                    key = v.key if v.key is not None else k
+                    kwargs[k] = event[""][key]
+
+                loc = "headers"
+                for k, v in header_args.items():
+                    key = v.key if v.key is not None else k
+                    kwargs[k] = event.get("headers",{})[key]
+            except Exception as e:
+                return errors.RequestParseError().json(
+                    f"Couldn't read parameter {k} from {loc}"
+                )
+            
+            # Add event/context if requested
+            if keep_event:
+                kwargs["event"] = event
+            if keep_context:
+                kwargs["context"] = context
 
             # Call the function
             try:
@@ -85,16 +150,28 @@ def sam(
                 print("UNCAUGHT ERROR:", e)
                 return errors.InternalServerError().json()
 
-
-            #TODO: If return type is None/NoReturn, don't include body? or just say success?
-
             # Return a response
             if jsonize_response:
+                if res is None and return_type in (None, NoReturn):
+                    return {
+                        "status_code": 200,
+                        "body": json.dumps({
+                            "success": True,
+                        })
+                    }
+                if isinstance(res, dict):
+                    return {
+                        "status_code": 200,
+                        "body": json.dumps({
+                            "success": True,
+                            **res
+                        })
+                    }
                 return {
                     "status_code": 200,
                     "body": json.dumps({
                         "success": True,
-                        **({"result": res} if not isinstance(res, dict) else res)
+                        "result": res,
                     })
                 }
             else:

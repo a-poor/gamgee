@@ -23,20 +23,6 @@ ALLOWED_TYPES = (
 )
 
 
-class RequestParam:
-    def __init__(self, annotation: type):
-        self.annot = annotation
-
-    def to(self, T: 'RequestParam'):
-        return T(self.annot)
-
-# TODO: Fill these in
-class Path(RequestParam): pass
-class Query(RequestParam): pass
-class Body(RequestParam): pass
-class Unspecified(RequestParam): pass
-
-
 def to_snake(name: str) -> str:
     """Make a `dict` key safe to act as a variable name.
 

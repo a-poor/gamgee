@@ -1,10 +1,14 @@
 import json
 from typing import Optional
 
-class SamError(Exception): pass
 
+class BaseSamError(Exception):
+    """Abstract base error for gamgee."""
 
-class HttpError(SamError): 
+class HttpError(BaseSamError):
+    """
+
+    """ 
     status_code: int = None
     default_message: str = None
 
@@ -19,21 +23,42 @@ class HttpError(SamError):
 
 
 class RequestParseError(HttpError): 
+    """
+
+    """
     status_code = 400
     default_message = "Error parsing request."
 
 
 class AuthenticationError(HttpError): 
+    """
+
+    """
     status_code = 401
     default_message = "Unable to authenticate."
 
 
 class AuthorizationError(HttpError): 
+    """
+
+    """
     status_code = 403
     default_message = "Unauthorized."
 
+
 class InternalServerError(HttpError): 
+    """
+
+    """
     status_code = 500
     default_message = "Internal server error."
 
+
+class TypeCoersionError(InternalServerError, ValueError): 
+    """
+
+    """
+    
+    # def json(self, dtype: type, val_name: str = "value"):
+    #     return super().json(f"Unable to convert `{val_name}` to `{dtype}`")
 

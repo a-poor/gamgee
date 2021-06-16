@@ -1,3 +1,8 @@
+"""
+gamgee/types.py
+
+"""
+
 from enum import Enum
 from typing import NewType, Union, Optional, Any
 

@@ -1,3 +1,8 @@
+"""
+gamgee/errors.py
+
+"""
+
 import json
 from typing import Optional
 

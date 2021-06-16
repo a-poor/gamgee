@@ -1,3 +1,8 @@
+"""
+gamgee/auth.py
+
+"""
+
 import os
 import datetime as dt
 from typing import Optional, Callable

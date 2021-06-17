@@ -179,7 +179,7 @@ def sam(
                 # just return the success-ness
                 if res is None and return_type in (None, NoReturn):
                     return {
-                        "status_code": 200,
+                        "statusCode": 200,
                         "body": json.dumps({
                             "success": True,
                         })
@@ -189,7 +189,7 @@ def sam(
                 # it with the `success`-ness flag
                 if isinstance(res, dict):
                     return {
-                        "status_code": 200,
+                        "statusCode": 200,
                         "body": json.dumps({
                             "success": True,
                             **res
@@ -198,7 +198,7 @@ def sam(
                 # Otherwise (if result isn't a dict)
                 # return it as the value to key "result"
                 return {
-                    "status_code": 200,
+                    "statusCode": 200,
                     "body": json.dumps({
                         "success": True,
                         "result": res,
@@ -209,7 +209,7 @@ def sam(
                 # it as the value to the key "body"
                 # (still with a status-code of 200)
                 return {
-                    "status_code": 200,
+                    "statusCode": 200,
                     "body": res
                 }
         return inner

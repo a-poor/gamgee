@@ -19,7 +19,7 @@ class HttpError(BaseSamError):
 
     def json(self, message: Optional[str] = None):
         return {
-            "status_code": self.status_code,
+            "statusCode": self.status_code,
             "body": json.dumps({
                 "success": False,
                 "error": self.default_message if message is None else message

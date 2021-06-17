@@ -92,7 +92,7 @@ def sam(
         # Get function arguments and matching annotations
         # if a `RequestParam` type isn't set, use `assumed_param_type`
         # based on the HTTP method
-        fn_args = {
+        fn_args_clean = {
             k: (
                 (v.annotation if v.annotation is not _inspect._empty else Any)
                 if isinstance(v.annotation, RequestParam) else 
@@ -101,10 +101,10 @@ def sam(
         }
 
         # Divide arguments out according to their source locations
-        query_args = {k: v for k, v in fn_args.items() if isinstance(v, Query)}
-        path_args = {k: v for k, v in fn_args.items() if isinstance(v, Path)}
-        body_args = {k: v for k, v in fn_args.items() if isinstance(v, Body)}
-        header_args = {k: v for k, v in fn_args.items() if isinstance(v, Header)}
+        query_args = {k: v for k, v in fn_args_clean.items() if isinstance(v, Query)}
+        path_args = {k: v for k, v in fn_args_clean.items() if isinstance(v, Path)}
+        body_args = {k: v for k, v in fn_args_clean.items() if isinstance(v, Body)}
+        header_args = {k: v for k, v in fn_args_clean.items() if isinstance(v, Header)}
 
         @ft.wraps(fn)
         def inner(event: dict, context) -> dict:
@@ -115,7 +115,7 @@ def sam(
                 # Authenticate the user
                 try:
                     user = authenticate(event)
-                except errors.HttpError as e: #TODO: Make less general
+                except errors.HttpError as e:
                     return e.json()
 
                 if authorize is not None:
@@ -131,31 +131,37 @@ def sam(
                 if pass_auth_user:
                     kwargs["authUser"] = user
 
-
             # Get the query/path/body/header params
             try:
                 loc = "query params"
+                qparams = event["queryStringParameters"] or {}
                 for k, v in query_args.items():
                     key = v.key if v.key is not None else k
-                    kwargs[k] = event.get("queryStringParameters", {})[key]
+                    kwargs[k] = qparams[key]
                 
                 loc = "path params"
+                pparams = event["pathParameters"] or {}
                 for k, v in path_args.items():
                     key = v.key if v.key is not None else k
-                    kwargs[k] = event.get("pathParameters", {})[key]
+                    kwargs[k] = pparams[key]
                 
                 loc = "request body"
+                if body_args:
+                    bparams = json.loads(event["body"] or "{}")
+                else:
+                    bparams = {}
                 for k, v in body_args.items():
                     key = v.key if v.key is not None else k
-                    kwargs[k] = event.get("body", {})[key]
+                    kwargs[k] = bparams[key]
 
                 loc = "headers"
+                hparams = event["pathParameters"] or {}
                 for k, v in header_args.items():
                     key = v.key if v.key is not None else k
-                    kwargs[k] = event.get("headers", {})[key]
+                    kwargs[k] = hparams[key]
             except Exception as e:
                 return errors.RequestParseError().json(
-                    f"Couldn't read parameter {k} from {loc}"
+                    f"Couldn't read parameter \"{k}\" from {loc}"
                 )
             
             # Add event/context if requested

@@ -4,13 +4,17 @@ gamgee/args.py
 """
 
 import re
-from enum import Enum
 import typing
+import inspect
+from enum import Enum
 from typing import get_type_hints, Any, Callable, Union, Dict, Type, NoReturn, List
+
+from dataclasses import dataclass
 
 from pydantic import BaseModel
 
 from . import errors
+from .types import RequestParam, Query
 
 
 ALLOWED_COLLECTION_TYPES = (
@@ -27,6 +31,34 @@ ALLOWED_TYPES = (
     # "NoReturn",
 )
 
+@dataclass
+class FnArg:
+    name: str
+    annot: Type = Any
+    default: Any = Any
+    is_optional: bool = False
+    location: RequestParam = Query
+
+
+def is_optional(t: Type, default_type: RequestParam) -> bool:
+    """Check if a type annotation is `Optional`.
+
+    :param t: The type annotation
+    :returns: Type's optional-ness
+    """
+    if t.__module__ != "Typing": return False
+    if not hasattr(t,"__args__"): return False
+    args = t.__args__
+    if len(args) != 2: return False
+    if type(None) not in args: return False
+    return True
+
+def get_opt_type(t: Type) -> Type:
+    assert is_optional(t), "`t` isn't an Optional type"
+    return t.__args__[0]
+
+def parse_args(args: List[inspect.Parameter]) -> List[FnArg]:
+    pass
 
 def to_snake(name: str) -> str:
     """Make a `dict` key safe to act as a variable name.

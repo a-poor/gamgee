@@ -7,21 +7,24 @@ gamgee/__init__.py
 import json
 import functools as ft
 import inspect as _inspect
-from typing import Optional, Callable, Union, NoReturn, Any
+from typing import Optional, Callable, Union, NoReturn
 
 from . import auth
 from . import args
 from . import errors
+from . import parsers
 from . import types
-from .types import AuthUser, Method, Path, Body, Query, Header, RequestParam
 
 __version__ = "0.1.0"
 
 
 def sam(
-    method: Union[str,Method] = Method.GET,
-    authenticate: Optional[Callable[[dict], AuthUser]] = None,
-    authorize: Optional[Callable[[AuthUser], bool]] = None,
+    body: Optional[Union[bool,Callable]] = parsers.parse_json,
+    pathParams: Optional[Union[bool,Callable]] = False,
+    queryString: Optional[Union[bool,Callable]] = False,
+    headers: Optional[Union[bool,Callable]] = False,
+    authenticate: Optional[Callable[[dict], types.AuthUser]] = None,
+    authorize: Optional[Callable[[types.AuthUser], bool]] = None,
     jsonize_response: bool = True,
     keep_event: bool = False,
     keep_context: bool = False,
@@ -31,12 +34,37 @@ def sam(
     and handle errors, and to convert lambda handler default parameters
     to a functions declared parameters.
 
-    :param method: HTTP method for request.
+    :param body: Should the wrapper function pass `event`'s "body"
+        attribute as an arg to inner function (called "body")? If `body`
+        is callable, it will be used to parse the values.
 
-        Note: `method` parameter is used to determine where to look for
-        parameter arguments (if the location isn't already specified).
-        POST and PUT methods look for arguments in the body, while 
-        GET and DELETE look in the query string.
+        For example, if the body is string-ified JSON, you can use `json.loads`
+        to load the request (or `parsers.json`, a wrapper around `json.loads`).
+        Or, you could use a `pydantic` model to parse and validate the input.
+
+        If this param parsing raises an error, it will be caught and returned
+        as an `errors.RequestParseError`.
+
+        See also other params: `pathParams`, `queryString`, and `headers`.
+
+    :param pathParams: Should the wrapper function pass `event`'s "pathParams"
+        attribute as an arg to inner function (called "path")? If `pathParams`
+        is callable, it will be used to parse the values.
+
+        See also other params: `body`, `queryString`, and `headers`.
+
+    :param queryString: Should the wrapper function pass `event`'s "queryString"
+        attribute as an arg to inner function (called "query")? If `queryString`
+        is callable, it will be used to parse the values.
+
+        See also other params: `pathParams`, `body`, and `headers`.
+
+    :param headers: Should the wrapper function pass `event`'s "headers"
+        attribute as an arg to inner function (called "headers")? If `headers`
+        is callable, it will be used to parse the values.
+
+        See also other params: `pathParams`, `queryString`, and `body`.
+
     :param authenticate: Function to authenticate the requesting user.
         Takes the full `event` as an input and returns a User.
     :param authorize: Function to authorize the requesting user.
@@ -66,45 +94,11 @@ def sam(
         assert authenticate is not None, "If `authorize` is not `None`, "+\
             "`authenticate` can't be `None`."
 
-    # Coerce `method` to be a Method enum
-    if not isinstance(method, Method):
-        method = method.fromStr(str(method).upper())
-
     def wrapper(fn: Callable):
 
-        # Get the function's arguments
-        fn_args = dict(_inspect.signature(fn).parameters)
+        # Get the function's return type, to use later when
+        # deciding how to format response
         return_type = args.get_return_type(fn)
-
-        # Assume where to find unspecified args
-        # based on request method
-        if method is Method.GET:
-            assumed_param_type = Query
-        elif method is Method.POST:
-            assumed_param_type = Body
-        elif method is Method.PUT:
-            assumed_param_type = Body
-        elif method is Method.DELETE:
-            assumed_param_type = Query
-        else:
-            assumed_param_type = Query
-
-        # Get function arguments and matching annotations
-        # if a `RequestParam` type isn't set, use `assumed_param_type`
-        # based on the HTTP method
-        fn_args_clean = {
-            k: (
-                (v.annotation if v.annotation is not _inspect._empty else Any)
-                if isinstance(v.annotation, RequestParam) else 
-                assumed_param_type(v.annotation))
-            for k, v in fn_args.items()
-        }
-
-        # Divide arguments out according to their source locations
-        query_args = {k: v for k, v in fn_args_clean.items() if isinstance(v, Query)}
-        path_args = {k: v for k, v in fn_args_clean.items() if isinstance(v, Path)}
-        body_args = {k: v for k, v in fn_args_clean.items() if isinstance(v, Body)}
-        header_args = {k: v for k, v in fn_args_clean.items() if isinstance(v, Header)}
 
         @ft.wraps(fn)
         def inner(event: dict, context) -> dict:
@@ -132,37 +126,36 @@ def sam(
                     kwargs["authUser"] = user
 
             # Get the query/path/body/header params
-            try:
-                loc = "query params"
-                qparams = event["queryStringParameters"] or {}
-                for k, v in query_args.items():
-                    key = v.key if v.key is not None else k
-                    kwargs[k] = qparams[key]
-                
-                loc = "path params"
-                pparams = event["pathParameters"] or {}
-                for k, v in path_args.items():
-                    key = v.key if v.key is not None else k
-                    kwargs[k] = pparams[key]
-                
-                loc = "request body"
-                if body_args:
-                    bparams = json.loads(event["body"] or "{}")
-                else:
-                    bparams = {}
-                for k, v in body_args.items():
-                    key = v.key if v.key is not None else k
-                    kwargs[k] = bparams[key]
-
-                loc = "headers"
-                hparams = event["pathParameters"] or {}
-                for k, v in header_args.items():
-                    key = v.key if v.key is not None else k
-                    kwargs[k] = hparams[key]
-            except Exception as e:
-                return errors.RequestParseError().json(
-                    f"Couldn't read parameter \"{k}\" from {loc}"
-                )
+            if body:
+                try:
+                    kwargs["body"] = body(event["body"]) if callable(body) else event["body"]
+                except Exception as e:
+                    return errors.RequestParseError().json(
+                        f"Unable to read request body."
+                    )
+            if pathParams:
+                try:
+                    kwargs["path"] = pathParams(event["pathParameters"]) if callable(pathParams) \
+                        else event["pathParameters"]
+                except Exception as e:
+                    return errors.RequestParseError().json(
+                        f"Unable to read request path parameters."
+                    )
+            if queryString:
+                try:
+                    kwargs["query"] = queryString(event["queryStringParameters"]) if callable(queryString) \
+                        else event["queryStringParameters"]
+                except Exception as e:
+                    return errors.RequestParseError().json(
+                        f"Unable to read request query string parameters."
+                    )
+            if headers:
+                try:
+                    kwargs["headers"] = headers(event["headers"]) if callable(headers) else event["headers"]
+                except Exception as e:
+                    return errors.RequestParseError().json(
+                        f"Unable to read request headers."
+                    )
             
             # Add event/context if requested
             if keep_event:

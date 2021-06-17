@@ -22,7 +22,7 @@ class HttpError(BaseSamError):
             "status_code": self.status_code,
             "body": json.dumps({
                 "success": False,
-                "message": self.default_message if message is None else message
+                "error": self.default_message if message is None else message
             })
         }
 
@@ -59,11 +59,11 @@ class InternalServerError(HttpError):
     default_message = "Internal server error."
 
 
-class TypeCoersionError(InternalServerError, ValueError): 
-    """
+# class TypeCoersionError(InternalServerError, ValueError): 
+#     """
 
-    """
+#     """
     
-    # def json(self, dtype: type, val_name: str = "value"):
-    #     return super().json(f"Unable to convert `{val_name}` to `{dtype}`")
+#     def json(self, dtype: type, val_name: str = "value"):
+#         return super().json(f"Unable to convert `{val_name}` to `{dtype}`")
 

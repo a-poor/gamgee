@@ -15,7 +15,7 @@ from . import errors
 from . import parsers
 from . import types
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 
 def sam(

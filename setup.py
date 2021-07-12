@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="gamgee",
-    version="0.3.2",
+    version="0.3.3",
     author="Austin Poor",
     author_email="45295232+a-poor@users.noreply.github.com",
     description="Gamgee helps you get up and running quickly with an AWS Lambda API.",

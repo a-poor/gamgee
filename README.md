@@ -14,17 +14,17 @@ The core functionality is wrapped up in the decorator function `@gamgee.sam` -- 
 ## Quick Start
 
 ```python
-In [1]: import gamgee                                                           
+In [1]: import gamgee, json                                                          
 
-In [2]: event = {"queryStringParameters": {"name": "samwise"}}                  
+In [2]: event = {"body": "{\"hello\":\"world\"}", "queryStringParameters": {"name": "samwise"}}                  
 
-In [3]: @gamgee.sam() 
-   ...: def lambda_handler(name: gamgee.Query(str)) -> int: 
-   ...:     return len(name) 
+In [3]: @gamgee.sam(body=json.loads, queryString=True) 
+   ...: def lambda_handler(body, query): 
+   ...:     return body["hello"] 
    ...:                                                                         
 
 In [4]: lambda_handler(event, None)                                             
-Out[4]: {'status_code': 200, 'body': '{"success": true, "result": 7}'}
+Out[4]: {'statusCode': 200, 'body': '{"success": true, "result": "world"}'}
 ```
 
 ## Installation

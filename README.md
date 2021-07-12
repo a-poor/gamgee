@@ -37,6 +37,5 @@ $ pip install gamgee
 
 ## To-Do
 
-- [ ] Test `gamgee.sam` decorator
-- [ ] Add a logger function / submodule
+- [ ] Handle function request type parsing like [FastAPI](https://fastapi.tiangolo.com/)
 

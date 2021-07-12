@@ -8,7 +8,7 @@ with open("requirements.txt") as f:
 
 setuptools.setup(
     name="gamgee",
-    version="0.3.0",
+    version="0.3.1",
     author="Austin Poor",
     author_email="45295232+a-poor@users.noreply.github.com",
     description="Gamgee helps you get up and running quickly with an AWS Lambda API.",

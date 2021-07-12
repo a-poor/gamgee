@@ -3,6 +3,9 @@ import setuptools
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
+with open("requirements.txt") as f:
+    requirements = f.read().strip().split("/n")
+
 setuptools.setup(
     name="gamgee",
     version="0.2.1",
@@ -19,5 +22,6 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(),
     python_requires=">=3.7",
+    install_requires=requirements,
 )
 

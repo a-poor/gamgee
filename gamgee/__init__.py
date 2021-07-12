@@ -169,7 +169,7 @@ def sam(
             except errors.HttpError as e:
                 return e.json()
             except Exception as e:
-                print("UNCAUGHT ERROR:", e)
+                print(f"UNCAUGHT ERROR: \"{e}\"")
                 return errors.InternalServerError().json()
 
             # Return a response

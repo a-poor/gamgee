@@ -4,8 +4,6 @@
 [![PyPI](https://img.shields.io/pypi/v/gamgee)](https://pypi.org/project/gamgee)
 [![PyPI - License](https://img.shields.io/pypi/l/gamgee)](https://pypi.org/project/gamgee)
 
-_created by Austin Poor_
-
 A python library for helping to setup an [AWS SAM](https://aws.amazon.com/serverless/sam) app -- specifically API Gateway SAM apps. `gamgee` aims to help users avoid rewriting boilerplate code within AWS Lambda handler functions. 
 
 The core functionality is wrapped up in the decorator function `@gamgee.sam` -- which can help with: 

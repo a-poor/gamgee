@@ -19,7 +19,7 @@ __version__ = "0.2.1"
 
 
 def sam(
-    body: Optional[Union[bool,Callable]] = parsers.parse_json,
+    body: Optional[Union[bool,Callable]] = json.loads,
     pathParams: Optional[Union[bool,Callable]] = False,
     queryString: Optional[Union[bool,Callable]] = False,
     headers: Optional[Union[bool,Callable]] = False,

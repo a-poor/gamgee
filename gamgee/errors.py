@@ -58,12 +58,3 @@ class InternalServerError(HttpError):
     status_code = 500
     default_message = "Internal server error."
 
-
-# class TypeCoersionError(InternalServerError, ValueError): 
-#     """
-
-#     """
-    
-#     def json(self, dtype: type, val_name: str = "value"):
-#         return super().json(f"Unable to convert `{val_name}` to `{dtype}`")
-

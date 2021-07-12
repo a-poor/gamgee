@@ -12,7 +12,7 @@ import jwt
 from .errors import RequestParseError, AuthenticationError
 
 
-DEFAULT_JWT_ALGO = "HS256"
+DEFAULT_JWT_ALGO   = "HS256"
 DEFAULT_JWT_SECRET = "secret"
 
 

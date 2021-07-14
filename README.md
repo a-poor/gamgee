@@ -35,5 +35,5 @@ $ pip install gamgee
 
 ## To-Do
 
-- [ ] Handle function request type parsing like [FastAPI](https://fastapi.tiangolo.com/) or [webargs](https://webargs.readthedocs.io/en/latest/api.html#module-webargs.core)
+- [ ] Handle function request type parsing like [FastAPI](https://fastapi.tiangolo.com/) or [webargs](https://webargs.readthedocs.io/en/latest)
 
